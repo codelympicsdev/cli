@@ -1,12 +1,37 @@
-import * as programm from 'commander';
+import * as program from 'commander';
 import { version } from '../package.json';
 
 import login from './login';
+import logout from './logout';
+import status from './status';
+import submit from './run';
 
-programm.version(version);
+program.version(version);
 
-programm
+program
   .command('login')
   .option('--ci', 'show token rather than saving it')
+  .option('--token [token]', 'save the given token rather than prompting')
   .action(login);
-programm.parse(process.argv);
+
+program.command('logout').action(logout);
+
+program.command('status').action(status);
+
+program
+  .command('run <challenge_id> <executable>')
+  .option(
+    '-l, --live',
+    'actually submit the result. this can not be undone and can only be done a limited amount of times'
+  )
+  .action(submit);
+
+program.on('command:*', function() {
+  console.error(
+    'Invalid command: %s\nSee --help for a list of available commands.',
+    program.args.join(' ')
+  );
+  process.exit(1);
+});
+
+program.parse(process.argv);

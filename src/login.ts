@@ -2,6 +2,9 @@ import * as prompts from 'prompts';
 import * as ora from 'ora';
 import fetch from 'node-fetch';
 import { decode } from 'jsonwebtoken';
+import * as Conf from 'conf';
+
+const config = new Conf();
 
 const emailMatcher = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
@@ -107,6 +110,8 @@ export default async function login(cmd: { ci: boolean }) {
       console.log(token);
       return;
     }
+
+    config.set('token', token);
 
     spinner.succeed(`Saved token`);
   } else {
