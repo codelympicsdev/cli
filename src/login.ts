@@ -1,120 +1,46 @@
-import * as prompts from 'prompts';
-import * as ora from 'ora';
-import fetch from 'node-fetch';
+import ora from 'ora';
 import { decode } from 'jsonwebtoken';
-import * as Conf from 'conf';
+import Conf from 'conf';
+import express from 'express';
+// @ts-ignore
+import openurl from 'openurl';
 
 const config = new Conf();
-
-const emailMatcher = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const loginPage =
+  'https://auth.codelympics.dev/auth?client_id=5d23b4d2866d0626232bed81';
 
 export default async function login(cmd: { ci: boolean }) {
-  const form = await prompts([
-    {
-      type: 'text',
-      name: 'email',
-      message: 'Email:',
-      validate: value =>
-        emailMatcher.test(value.toLowerCase())
-          ? true
-          : 'The provided email address is not valid',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'Password:',
-    },
-  ]);
+  const spinner = ora('Starting callback server').start();
 
-  const spinner = ora('Requesting token').start();
+  const app = express();
 
-  const response = await fetch(`https://api.codelympics.dev/v0/auth/signin`, {
-    method: 'POST',
-    body: JSON.stringify({
-      email: form.email,
-      password: form.password,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  app.get('/auth_return', (req, res) => {
+    res.send('You can now close this page and return to the CLI.');
+    server.close();
 
-  if (!response.ok) {
-    if (response.headers.get('Content-Type') == 'application/json') {
-      spinner.fail(`An error occured: ${(await response.json()).error}`);
-    } else {
-      spinner.fail(`An error occured: ${await response.text()}`);
-    }
-    return;
-  }
+    const token = req.query['token'];
+    if (token) {
+      const decoded = decode(token);
 
-  if (response.headers.get('Content-Type') == 'application/json') {
-    let token: string;
-    token = (await response.json()).token;
-    if (!token) {
-      spinner.fail(`An error occured: token is empty`);
-      return;
-    }
+      console.log(`Hello ${(decoded as { full_name: string }).full_name}`);
 
-    const decoded = decode(token);
-
-    if (
-      decoded &&
-      typeof decoded != 'string' &&
-      (decoded.requires_upgrade as boolean)
-    ) {
-      spinner.info(`One time password is required`);
-
-      const form = await prompts({
-        type: 'text',
-        name: 'otp',
-        message: 'OTP:',
-      });
-
-      spinner.info(`Validating OTP`);
-
-      const response = await fetch(
-        `https://api.codelympics.dev/v0/auth/upgrade/otp`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            otp: form.otp,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.headers.get('Content-Type') == 'application/json') {
-          spinner.fail(`An error occured: ${(await response.json()).error}`);
-        } else {
-          spinner.fail(`An error occured: ${await response.text()}`);
-        }
+      if (cmd.ci) {
+        spinner.succeed(`Recieved token:`);
+        console.log(token);
         return;
       }
 
-      if (response.headers.get('Content-Type') == 'application/json') {
-        token = (await response.json()).token;
-        if (!token) {
-          spinner.fail(`An error occured: token is empty`);
-          return;
-        }
-      }
+      config.set('token', token);
+
+      spinner.succeed(`Saved token`);
+    } else {
+      spinner.fail(`Did not recieve a token.`);
     }
+  });
 
-    if (cmd.ci) {
-      spinner.succeed(`Recieved token:`);
-      console.log(token);
-      return;
-    }
-
-    config.set('token', token);
-
-    spinner.succeed(`Saved token`);
-  } else {
-    spinner.fail(`An error occured: response not json`);
-  }
+  const server = app.listen('5555', () => {
+    openurl.open(loginPage);
+    spinner.text = 'Opening login page and waiting for callback: ' + loginPage;
+    spinner.render();
+  });
 }

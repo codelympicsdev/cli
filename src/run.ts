@@ -1,7 +1,7 @@
-import * as ora from 'ora';
+import ora from 'ora';
 import fetch from 'node-fetch';
-import * as Conf from 'conf';
-import * as spawn from 'cross-spawn';
+import Conf from 'conf';
+import spawn from 'cross-spawn';
 import chalk from 'chalk';
 import {
   streamWrite,

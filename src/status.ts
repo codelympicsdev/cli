@@ -1,5 +1,5 @@
-import * as ora from 'ora';
-import * as Conf from 'conf';
+import ora from 'ora';
+import Conf from 'conf';
 import { decode } from 'jsonwebtoken';
 
 const config = new Conf();

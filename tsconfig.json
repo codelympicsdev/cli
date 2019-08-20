@@ -7,6 +7,7 @@
     "noImplicitReturns": true,
     "lib": ["esnext"],
     "resolveJsonModule": true,
+    "esModuleInterop": true,
     "outDir": "lib"
   },
   "include": ["src"]
