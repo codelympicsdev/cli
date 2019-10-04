@@ -1,36 +1,34 @@
-name: Node CI
+name: build
 
 on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v1
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: 12.x
-    - name: Install packages
-      run: yarn
-    - name: Build
-      run: yarn build
-    - name: Compile
-      run: yarn compile
-    - name: Upload linux
-      uses: actions/upload-artifact@master
-      with:
-        name: codelympics-linux
-        path: codelympics-linux
-    - name: Upload macos
-      uses: actions/upload-artifact@master
-      with:
-        name: codelympics-macos
-        path: codelympics-macos
-    - name: Upload windows
-      uses: actions/upload-artifact@master
-      with:
-        name: codelympics-win
-        path: codelympics-win.exe
+      - uses: actions/checkout@v1
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install packages
+        run: yarn
+      - name: Build
+        run: yarn build
+      - name: Compile
+        run: yarn compile
+      - name: Upload linux
+        uses: actions/upload-artifact@master
+        with:
+          name: codelympics-linux
+          path: codelympics-linux
+      - name: Upload macos
+        uses: actions/upload-artifact@master
+        with:
+          name: codelympics-macos
+          path: codelympics-macos
+      - name: Upload windows
+        uses: actions/upload-artifact@master
+        with:
+          name: codelympics-win
+          path: codelympics-win.exe
