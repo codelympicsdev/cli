@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "clear; node lib/src/index.js",
-    "compile": "pkg lib/src/index.js"
+    "compile": "pkg --targets node12-linux-x64,node12-macos-x64,node12-win-x64 -o codelympics lib/src/index.js"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.0",
