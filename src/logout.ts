@@ -1,7 +1,5 @@
 import ora from 'ora';
-import Conf from 'conf';
-
-const config = new Conf();
+import { config } from './util/config';
 
 export default async function logout() {
   const spinner = ora('Signing out').start();

@@ -1,6 +1,6 @@
 import ora from 'ora';
 import fetch from 'node-fetch';
-import Conf from 'conf';
+import { config } from './util/config';
 import spawn from 'cross-spawn';
 import chalk from 'chalk';
 import {
@@ -9,19 +9,20 @@ import {
   chomp,
   streamEnd,
 } from '@rauschma/stringio';
-
-const config = new Conf();
+import { client } from './util/graphql';
 
 interface TestResponse {
-  challenge: string;
-  input: Input;
-  expected_output: Output;
+  generateAttempt: {
+    input: Input;
+    expected_output: Output;
+  };
 }
 
 interface LiveResponse {
-  id: string;
-  challenge: string;
-  input: Input;
+  generateAttempt: {
+    id: string;
+    input: Input;
+  };
 }
 
 interface Input {
@@ -43,102 +44,127 @@ export default async function submit(
 
   const spinner = ora('Getting data').start();
 
-  if (cmd.live) {
-    const response = await fetch(
-      `https://api.codelympics.dev/v0/challenges/${challengeID}/generate/live`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  const c = client(token);
 
-    if (!response.ok) {
-      if (response.headers.get('Content-Type') == 'application/json') {
-        spinner.fail(`An error occured: ${(await response.json()).error}`);
+  if (cmd.live) {
+    let data: LiveResponse;
+    try {
+      data = await c.request(
+        `
+          mutation GenerateLiveAttempt($challenge: ID!) {
+            generateAttempt(challenge: $challenge, live: true) {
+              id
+              input {
+                arguments
+                stdin
+              }
+            }
+          }
+        `,
+        { challenge: challengeID }
+      );
+    } catch (error) {
+      if ((error as Error).message.includes('max attempts')) {
+        spinner.fail(
+          `You have reached the maximum allowed attempts for this challenge.`
+        );
       } else {
-        spinner.fail(`An error occured: ${await response.text()}`);
+        spinner.fail(`Fetching data failed: ${(error as Error).message}`);
       }
       return;
     }
 
-    if (response.headers.get('Content-Type') != 'application/json') {
-      spinner.fail(`An error occured: response not json`);
+    if (!data || !data.generateAttempt) {
+      spinner.fail(`No data recieved: ${data}`);
+      return;
     }
 
-    const data = (await response.json()) as LiveResponse;
+    const attempt = data.generateAttempt;
 
-    spinner.succeed('Got data');
+    spinner.succeed('Recieved data');
 
     const programSpinner = ora('Running program').start();
-    const output = await run(executable, data.input);
+    const output = await run(executable, attempt.input);
     programSpinner.succeed('Finished running');
 
     const uploadSpinner = ora('Uploading results').start();
-    const resp = await fetch(
-      `https://api.codelympics.dev/v0/attempts/${data.id}/submit`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          output,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    if (!resp.ok) {
-      uploadSpinner.fail('Failed uploading results');
+    let resp: any;
+    try {
+      resp = await c.request(
+        `
+        mutation SubmitLiveAttempt($attempt: ID!, $stdout: String!, $stderr: String!) {
+          submitAttempt(attempt: $attempt, stdout: $stdout, stderr: $stderr) {
+            completed
+          }
+        }
+      `,
+        {
+          attempt: attempt.id,
+          stdout: output.stdout,
+          stderr: output.stderr,
+        }
+      );
+    } catch (error) {
+      spinner.fail(`Submission failed with error: ${(error as Error).message}`);
       return;
     }
 
-    uploadSpinner.succeed('Uploaded results');
+    if (!resp || !resp.submitAttempt) {
+      spinner.fail(`Submission recieved no response data: ${resp}`);
+      return;
+    }
+
+    uploadSpinner.succeed(
+      `Server recieved results at ${new Date(
+        resp.submitAttempt.completed
+      ).toLocaleString()}.`
+    );
   } else {
-    const response = await fetch(
-      `https://api.codelympics.dev/v0/challenges/${challengeID}/generate/test`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      if (response.headers.get('Content-Type') == 'application/json') {
-        spinner.fail(`An error occured: ${(await response.json()).error}`);
-      } else {
-        spinner.fail(`An error occured: ${await response.text()}`);
-      }
+    let data: TestResponse;
+    try {
+      data = await c.request(
+        `
+          mutation GenerateTestAttempt($challenge: ID!) {
+            generateAttempt(challenge: $challenge, live: false) {
+              id
+              input {
+                arguments
+                stdin
+              }
+              expected_output {
+                stdout
+                stderr
+              }
+            }
+          }
+        `,
+        { challenge: challengeID }
+      );
+    } catch (error) {
+      spinner.fail(`Submission failed with error: ${(error as Error).message}`);
       return;
     }
-
-    if (response.headers.get('Content-Type') != 'application/json') {
-      spinner.fail(`An error occured: response not json`);
-    }
-
-    const data = (await response.json()) as TestResponse;
 
     spinner.succeed('Recieved data');
     const programSpinner = ora('Running program').start();
 
-    const output = await run(executable, data.input);
+    const attempt = data.generateAttempt;
 
-    if (output.stdout != data.expected_output.stdout) {
+    const output = await run(executable, attempt.input);
+
+    if (output.stdout != attempt.expected_output.stdout) {
       programSpinner.fail('Stdout does not match');
       console.log(chalk.bold('Stdout should be'));
-      console.log(data.expected_output.stdout);
+      console.log(attempt.expected_output.stdout);
       console.log(chalk.bold('but is'));
       console.log(output.stdout);
       return;
     }
 
-    if (output.stderr != data.expected_output.stderr) {
+    if (output.stderr != attempt.expected_output.stderr) {
       programSpinner.fail('Stderr does not match');
       console.log(chalk.bold('Stderr should be'));
-      console.log(data.expected_output.stderr);
+      console.log(attempt.expected_output.stderr);
       console.log(chalk.bold('but is'));
       console.log(output.stderr);
       return;

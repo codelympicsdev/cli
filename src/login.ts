@@ -1,11 +1,10 @@
 import ora from 'ora';
 import { decode } from 'jsonwebtoken';
-import Conf from 'conf';
+import { config } from './util/config';
 import express from 'express';
 // @ts-ignore
 import openurl from 'openurl';
 
-const config = new Conf();
 const loginPage =
   'https://auth.codelympics.dev/auth?client_id=5d23b4d2866d0626232bed81';
 

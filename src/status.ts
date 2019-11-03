@@ -1,8 +1,7 @@
 import ora from 'ora';
-import Conf from 'conf';
+import { config } from './util/config';
 import { decode } from 'jsonwebtoken';
 
-const config = new Conf();
 export default async function status() {
   const spinner = ora('Checking status').start();
 
