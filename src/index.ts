@@ -34,4 +34,7 @@ program.on('command:*', function() {
   process.exit(1);
 });
 
+program.command('help').action(() => program.outputHelp());
+
 program.parse(process.argv);
+if (program.args.length === 0) program.outputHelp();
