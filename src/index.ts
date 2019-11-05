@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import program from 'commander';
 import { version } from '../package.json';
 
@@ -22,7 +23,7 @@ program
   .command('run <challenge_id> <executable> [arguments...]')
   .option(
     '-l, --live',
-    'actually submit the result. this can not be undone and can only be done a limited amount of times'
+    'actually submit the result. This can not be undone and can only be done a limited amount of times'
   )
   .action(submit);
 

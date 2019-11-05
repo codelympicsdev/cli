@@ -1,8 +1,11 @@
 {
-  "name": "codelympics",
+  "name": "codelympics-cli",
   "version": "0.1.0",
   "main": "index.js",
   "license": "MIT",
+  "bin": {
+    "codelympics": "./lib/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "clear; node lib/src/index.js",
