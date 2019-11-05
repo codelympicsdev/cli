@@ -1,15 +1,19 @@
 {
-  "name": "codelympics-cli",
-  "version": "0.1.0",
-  "main": "index.js",
+  "name": "@codelympics/cli",
+  "version": "0.1.2",
+  "main": "lib/index.js",
   "license": "MIT",
   "bin": {
     "codelympics": "./lib/index.js"
   },
+  "files": [
+    "lib"
+  ],
   "scripts": {
-    "build": "tsc",
-    "start": "clear; node lib/src/index.js",
-    "compile": "pkg --targets node12-linux-x64,node12-macos-x64,node12-win-x64 -o codelympics lib/src/index.js"
+    "prepack": "npm run build",
+    "build": "tsc && mv lib/src lib__ && rm -rf lib && mv lib__ lib",
+    "start": "clear; node lib/index.js",
+    "compile": "pkg --targets node12-linux-x64,node12-macos-x64,node12-win-x64 -o codelympics lib/index.js"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.0",

@@ -1,6 +1,6 @@
-# codelympics cli
-
 [![CI Status](https://github.com/codelympicsdev/cli/workflows/ci/badge.svg)](https://github.com/codelympicsdev/cli/actions)
+
+# codelympics cli
 
 This is the CLI for https://codelympics.dev.
 
