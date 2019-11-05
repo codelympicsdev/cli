@@ -19,7 +19,7 @@ program.command('logout').action(logout);
 program.command('status').action(status);
 
 program
-  .command('run <challenge_id> <executable>')
+  .command('run <challenge_id> <executable> [arguments...]')
   .option(
     '-l, --live',
     'actually submit the result. this can not be undone and can only be done a limited amount of times'

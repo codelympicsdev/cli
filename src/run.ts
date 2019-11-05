@@ -38,6 +38,7 @@ interface Output {
 export default async function submit(
   challengeID: string,
   executable: string,
+  args: string[],
   cmd: { live: boolean }
 ) {
   const token = config.get('token') as string;
@@ -84,7 +85,7 @@ export default async function submit(
     spinner.succeed('Recieved data');
 
     const programSpinner = ora('Running program').start();
-    const output = await run(executable, attempt.input);
+    const output = await run(executable, args, attempt.input);
     programSpinner.succeed('Finished running');
 
     const uploadSpinner = ora('Uploading results').start();
@@ -150,32 +151,39 @@ export default async function submit(
 
     const attempt = data.generateAttempt;
 
-    const output = await run(executable, attempt.input);
+    try {
+      const output = await run(executable, args, attempt.input);
+      if (output.stdout != attempt.expected_output.stdout) {
+        programSpinner.fail('Stdout does not match');
+        console.log(chalk.bold('Stdout should be'));
+        console.log(attempt.expected_output.stdout);
+        console.log(chalk.bold('but is'));
+        console.log(output.stdout);
+        return;
+      }
 
-    if (output.stdout != attempt.expected_output.stdout) {
-      programSpinner.fail('Stdout does not match');
-      console.log(chalk.bold('Stdout should be'));
-      console.log(attempt.expected_output.stdout);
-      console.log(chalk.bold('but is'));
-      console.log(output.stdout);
-      return;
+      if (output.stderr != attempt.expected_output.stderr) {
+        programSpinner.fail('Stderr does not match');
+        console.log(chalk.bold('Stderr should be'));
+        console.log(attempt.expected_output.stderr);
+        console.log(chalk.bold('but is'));
+        console.log(output.stderr);
+        return;
+      }
+
+      programSpinner.succeed('Test succeded');
+    } catch (error) {
+      programSpinner.fail('Running test failed: ' + error.message);
     }
-
-    if (output.stderr != attempt.expected_output.stderr) {
-      programSpinner.fail('Stderr does not match');
-      console.log(chalk.bold('Stderr should be'));
-      console.log(attempt.expected_output.stderr);
-      console.log(chalk.bold('but is'));
-      console.log(output.stderr);
-      return;
-    }
-
-    programSpinner.succeed('Test succeded');
   }
 }
 
-async function run(executable: string, input: Input): Promise<Output> {
-  const proc = spawn(executable, input.arguments, {
+async function run(
+  executable: string,
+  args: string[],
+  input: Input
+): Promise<Output> {
+  const proc = spawn(executable, [...args, ...input.arguments], {
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
