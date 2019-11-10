@@ -8,6 +8,7 @@ import status from './status';
 import submit from './run';
 
 program.version(version);
+program.command('version').action(() => console.log(version));
 
 program
   .command('login')
