@@ -7,11 +7,11 @@ This is the CLI for https://codelympics.dev.
 ## installation
 
 ```
-npm i -g codelympics-cli
+npm i -g @codelympics/cli
 ```
 
 ```
-yarn global add codelympics-cli
+yarn global add @codelympics/cli
 ```
 
 ## usage
