@@ -95,7 +95,7 @@ export default async function submit(
         `
         mutation SubmitLiveAttempt($attempt: ID!, $stdout: String!, $stderr: String!) {
           submitAttempt(attempt: $attempt, stdout: $stdout, stderr: $stderr) {
-            completed
+            submission_date
           }
         }
       `,
@@ -117,7 +117,7 @@ export default async function submit(
 
     uploadSpinner.succeed(
       `Server recieved results at ${new Date(
-        resp.submitAttempt.completed
+        resp.submitAttempt.submission_date
       ).toLocaleString()}.`
     );
   } else {
