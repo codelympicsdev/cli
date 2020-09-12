@@ -35,7 +35,7 @@
     "express": "^4.17.1",
     "graphql-request": "^1.8.2",
     "jsonwebtoken": "^8.5.1",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "openurl": "^1.1.1",
     "ora": "^3.4.0",
     "prompts": "^2.1.0"
